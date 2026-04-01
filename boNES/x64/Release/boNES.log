@@ -1,0 +1,6 @@
+﻿  main.cpp
+  Generating code
+  Previous IPDB not found, fall back to full compilation.
+  All 77 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  boNES.vcxproj -> C:\Users\Julia\source\repos\boNES\x64\Release\boNES.exe
