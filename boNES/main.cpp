@@ -9,13 +9,14 @@
 #include <fstream>
 #include <string>
 #include <array>
+#include <filesystem>
 
 // Header Files
 #include "main.h"
 
 // Graphics
 const int WINDOW_WIDTH = 256;
-const int WINDOW_HEIGHT = 224;
+const int WINDOW_HEIGHT = 240;
 SDL_Window* g_main_window;
 SDL_Renderer* g_main_renderer;
 
@@ -24,19 +25,20 @@ namespace Colors {
     const SDL_Color BLACK = { 0, 0, 0, SDL_ALPHA_OPAQUE };
 }
 
-static bool InitSDL() { // Starts SDL2
+
+static bool InitSDL(const std::string& title) { // Starts SDL2
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
         std::cout << "SDL2 failed to initialize with error: " << SDL_GetError();
         return false;
     }
 
     g_main_window = SDL_CreateWindow(
-        "boNES",
+        title.c_str(),
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         WINDOW_WIDTH,
         WINDOW_HEIGHT,
-        SDL_WINDOW_OPENGL
+        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
     );
 
     if (g_main_window == nullptr) {
@@ -45,7 +47,10 @@ static bool InitSDL() { // Starts SDL2
         return false;
     }
 
-    g_main_renderer = SDL_CreateRenderer(g_main_window, -1, SDL_RENDERER_PRESENTVSYNC);
+
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
+    g_main_renderer = SDL_CreateRenderer(g_main_window, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
+    SDL_RenderSetLogicalSize(g_main_renderer, 256, 240);
 
 
     return true;
@@ -73,23 +78,63 @@ static void clear(SDL_Renderer* renderer) {
 
 int main(int argc, char* argv[]) {  // argc = number of arguments argv = path of argument 
 
-    std::cout << "                                                                                                                        _|                  _|      _|  _|_|_|_|    _|_|_|                                                                      _|_|_|      _|_|    _|_|    _|  _|        _|                                                                            _|    _|  _|    _|  _|  _|  _|  _|_|_|      _|_|                                                                        _|    _|  _|    _|  _|    _|_|  _|              _|                                                                      _|_|_|      _|_|    _|      _|  _|_|_|_|  _|_|_|                                                                                                                                                                                                ";
+    std::cout << R"(
 
-    std::cout << "Welcome to the boNES emulator! \n";
+                              _|                  _|      _|  _|_|_|_|    _|_|_|     
+                              _|_|_|      _|_|    _|_|    _|  _|        _|           
+                              _|    _|  _|    _|  _|  _|  _|  _|_|_|      _|_|       
+                              _|    _|  _|    _|  _|    _|_|  _|              _|     
+                              _|_|_|      _|_|    _|      _|  _|_|_|_|  _|_|_|       
+
+                                            made bone by bone 
+
+    )";
+
+    std::cout << "\nWelcome to the boNES emulator!\n" << "boNES v0.1 \n";
 
 
     if (argc < 2)
     {
-        std::cout << "Please drag a .nes file onto boNES.exe in the file explorer!\n";
+        std::cout << "\n Please drag a .nes file onto boNES.exe in the file explorer!\n";
         return -1;
     }
 
 
+    bool startup = false;
+    bool debug = false;
 
+    std::string in;
     std::string ROM = argv[1];
-    std::cout << "NES file recieved!";
+    std::cout << "\nNES file recieved!\n";
 
-    if (InitSDL() == false) { OSDL(); }
+    while (!startup) {
+        std::cout << "\nWhat would you like to do? (s to start emulation, h for more options, x to quit)\n";
+        std::cin >> in;
+
+        if (in == "s") {
+            startup = true;
+        }
+        else if (in == "h") {
+            std::cout << "\ns = start emulation\nx = quit\nr = cartridge information\nd = start with debug mode";
+        }
+        else if (in == "x") {
+            return 0;
+        }
+        else if (in == "r") {
+            std::cout << "\n" << argv[1] << "\n";
+        }
+        else if (in == "d") {
+            std::cout << "\nDebug mode enabled!\n";
+            startup = true;
+        }
+    }
+
+    std::filesystem::path romPath = argv[1];
+    ROM = romPath.stem().string();
+
+    std::string title = "boNES | " + ROM;
+
+    if (InitSDL(title) == false) { OSDL(); }
 
     // Draw Loop for SDL2
     SDL_Event event;
@@ -99,7 +144,7 @@ int main(int argc, char* argv[]) {  // argc = number of arguments argv = path of
         clear(g_main_renderer);
 
         // Checking for input and proccesing.
-        if (SDL_PollEvent(&event)) {
+        while (SDL_PollEvent(&event)) {
             switch (event.type) {
                 case SDL_KEYDOWN: { running = event.key.keysym.scancode != SDL_SCANCODE_ESCAPE; break; }
                 case SDL_QUIT: {
